@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Painel Administrativo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet" />
+    <script src="https://unpkg.com/imask"></script>
+    <style>
+        .view {
+            display: none;
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        .nav-link.active {
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark px-3">
+        <a class="navbar-brand" href="#">Cereja Doce Moda 🍒 Painel Admin</a>
+
+        <!-- Botão hamburguer para mobile -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <!-- Links do menu -->
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto gap-2"> <!-- gap-2 adiciona espaçamento entre os links -->
+                <li class="nav-item">
+                    <a href="#" class="nav-link text-white" onclick="showView('pedidos')">Pedidos</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link text-white" onclick="showView('clientes')">Clientes</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link text-white"
+                        onclick="showView('consulta-clientes'); listarTodosClientes()">Consultar Clientes</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link text-white"
+                        onclick="showView('pedidos-confirmados'); listarPedidosConfirmados()">Pedidos Confirmados</a>
+                </li>
+                <a href="#" class="nav-link text-white" onclick="showView('excluir-cliente'); listarClientesExcluir()">
+                    Excluir Cliente
+                </a>
+
+            </ul>
+        </div>
+    </nav>
+
+
+    <!-- Views -->
+    <div class="container mt-4">
+        <!-- Pedidos -->
+        <div id="view-pedidos" class="view active">
+            <h3>Pedidos</h3>
+            <table class="table table-bordered mt-3">
+                <thead>
+                    <tr>
+                        <th>Pedido</th>
+                        <th>Cliente</th>
+                        <th>Status</th>
+                        <th>Total</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="lista-pedidos"></tbody>
+            </table>
+        </div>
+
+        <!-- Clientes -->
+        <div id="view-clientes" class="view">
+            <h3>Cadastro de Cliente</h3>
+            <form id="form-cliente" class="row g-3">
+                <div class="mb-3">
+                    <label class="form-label">Tipo de Pessoa</label><br />
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="tipo_pessoa" id="pf" value="pf" checked>
+                        <label class="form-check-label" for="pf">Pessoa Física</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="tipo_pessoa" id="pj" value="pj">
+                        <label class="form-check-label" for="pj">Pessoa Jurídica</label>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Nome</label>
+                    <input type="text" class="form-control" name="nome" required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Telefone</label>
+                    <input type="text" class="form-control" name="telefone" id="telefone" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" name="email" required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Senha</label>
+                    <input type="password" class="form-control" name="senha" required />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">CPF</label>
+                    <input type="text" class="form-control" name="cpf" id="cpf" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">CNPJ</label>
+                    <input type="text" class="form-control" name="cnpj" id="cnpj" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Razão Social</label>
+                    <input type="text" class="form-control" name="razao_social" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">CEP</label>
+                    <input type="text" class="form-control" name="cep" id="cep" required />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Rua</label>
+                    <input type="text" class="form-control" name="rua" id="rua" required />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Número</label>
+                    <input type="text" class="form-control" name="numero" required />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Bairro</label>
+                    <input type="text" class="form-control" name="bairro" id="bairro" required />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Cidade</label>
+                    <input type="text" class="form-control" name="cidade" id="cidade" required />
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-success">Salvar Cliente</button>
+                </div>
+            </form>
+        </div>
+        <!-- Consultar Clientes -->
+        <div id="view-consulta-clientes" class="view">
+            <h3>Consulta de Clientes</h3>
+
+            <input type="text" id="filtro-cliente" class="form-control mb-3"
+                placeholder="Buscar por nome ou razão social..." oninput="filtrarClientes()" />
+
+            <table class="table table-striped table-bordered">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Nome</th>
+                        <th>Telefone</th>
+                        <th>Email</th>
+                        <th>CPF</th>
+                        <th>CNPJ</th>
+                        <th>Razão Social</th>
+                        <th>Endereço</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-clientes"></tbody>
+            </table>
+        </div>
+
+        <!-- Pedidos Confirmados -->
+        <div id="view-pedidos-confirmados" class="view">
+            <h3>Pedidos Confirmados</h3>
+
+            <input type="text" id="filtro-confirmados" class="form-control mb-3"
+                placeholder="Buscar por nome ou número do pedido..." oninput="filtrarPedidosConfirmados()" />
+
+            <table class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>WhatsApp</th>
+                        <th>Total</th>
+                        <th>Frete</th>
+                        <th>Produtos</th>
+                        <th>Criado em</th>
+                        <th>Confirmado em</th>
+                    </tr>
+                </thead>
+
+                <tbody id="tabela-confirmados"></tbody>
+            </table>
+        </div>
+        <div id="view-excluir-cliente" class="view">
+            <h3>Excluir Cliente</h3>
+
+            <input type="text" id="filtro-excluir-cliente" class="form-control mb-3" placeholder="Buscar por nome..."
+                oninput="filtrarClientesExcluir()" />
+
+            <ul id="lista-clientes-excluir" class="list-group"></ul>
+        </div>
+
+
+    </div>
+    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title" id="confirmDeleteLabel">Confirmação</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body" id="confirmDeleteMessage">
+                    <!-- Mensagem dinâmica aqui -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="cancelDeleteBtn" class="btn btn-secondary"
+                        data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="confirmDeleteBtn" class="btn btn-danger">Excluir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal fade" id="feedbackModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title">Atenção</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalMensagem"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        const API = 'https://vps60230.publiccloud.com.br';
+        let clientesCache = {};
+
+        function showView(view) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(`view-${view}`).classList.add('active');
+        }
+
+        // Máscaras
+        IMask(document.getElementById('telefone'), { mask: '(00) 00000-0000' });
+        IMask(document.getElementById('cpf'), { mask: '000.000.000-00' });
+        IMask(document.getElementById('cnpj'), { mask: '00.000.000/0000-00' });
+        IMask(document.getElementById('cep'), { mask: '00000-000' });
+
+        // Tipo de pessoa toggle
+        function toggleTipoPessoa() {
+            const isPF = document.getElementById('pf').checked;
+            document.getElementById('cpf').closest('.col-md-4').style.display = isPF ? 'block' : 'none';
+            document.getElementById('cnpj').closest('.col-md-4').style.display = isPF ? 'none' : 'block';
+            document.querySelector('[name="razao_social"]').closest('.col-md-4').style.display = isPF ? 'none' : 'block';
+        }
+
+        document.querySelectorAll('input[name="tipo_pessoa"]').forEach(r => r.addEventListener('change', toggleTipoPessoa));
+        window.addEventListener('DOMContentLoaded', toggleTipoPessoa);
+
+        // AutoCEP
+        document.getElementById('cep').addEventListener('blur', async () => {
+            const cep = document.getElementById('cep').value.replace(/\D/g, '');
+            const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+            const data = await res.json();
+            if (!data.erro) {
+                document.getElementById('rua').value = data.logradouro;
+                document.getElementById('bairro').value = data.bairro;
+                document.getElementById('cidade').value = data.localidade;
+            }
+        });
+
+        // Capitaliza nome
+        function capitalizeWords(str) {
+            return str.replace(/\b\w/g, l => l.toUpperCase());
+        }
+        document.querySelector('[name="nome"]').addEventListener('input', e => {
+            e.target.value = capitalizeWords(e.target.value);
+        });
+        document.querySelector('[name="razao_social"]').addEventListener('input', e => {
+            e.target.value = capitalizeWords(e.target.value);
+        });
+
+        // Form cliente
+        document.getElementById('form-cliente').addEventListener('submit', async e => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.disabled = true;
+            btn.textContent = 'Salvando...';
+            const form = new FormData(e.target);
+            const cliente = Object.fromEntries(form.entries());
+            cliente.endereco = {
+                cep: cliente.cep,
+                rua: cliente.rua,
+                numero: cliente.numero,
+                bairro: cliente.bairro,
+                cidade: cliente.cidade
+            };
+            try {
+                const res = await fetch(`${API}/clients`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(cliente)
+                });
+                const data = await res.json();
+                showModal(data.message || data.error);
+                if (res.ok) e.target.reset();
+            } catch (err) {
+                showModal('Erro ao cadastrar cliente');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Salvar Cliente';
+            }
+        });
+
+        async function listarPedidos() {
+            const pedidosRes = await fetch(`${API}/orders/pending`);
+            const pedidos = await pedidosRes.json();
+            const clientesRes = await fetch(`${API}/clients/secret_list_client`);
+            const clientes = await clientesRes.json();
+
+            clientes.forEach(c => clientesCache[c.id] = c.nome);
+
+            const tbody = document.getElementById('lista-pedidos');
+            tbody.innerHTML = '';
+            pedidos.forEach(pedido => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+          <td>${pedido.order_id}</td>
+          <td>${clientesCache[pedido.user_id] || 'Desconhecido'}</td>
+          <td>${pedido.status}</td>
+          <td>R$ ${pedido.total.toFixed(2)}</td>
+          <td>
+            <button class="btn btn-success btn-sm" onclick="confirmarPedido(${pedido.id})">✅</button>
+            <button class="btn btn-danger btn-sm" onclick="cancelarPedido(${pedido.id})">❌</button>
+          </td>
+        `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function confirmarPedido(id) {
+            await fetch(`${API}/orders/${id}/confirm`, { method: 'PUT' });
+            showModal('Pedido confirmado!');
+            listarPedidos();
+        }
+
+        async function cancelarPedido(id) {
+            await fetch(`${API}/orders/${id}/cancel`, { method: 'DELETE' });
+            showModal('Pedido cancelado!');
+            listarPedidos();
+        }
+
+        function showModal(msg) {
+            document.getElementById('modalMensagem').textContent = msg;
+            new bootstrap.Modal(document.getElementById('feedbackModal')).show();
+        }
+
+        listarPedidos();
+        async function listarTodosClientes() {
+            const res = await fetch(`${API}/clients/secret_list_client`);
+            const clientes = await res.json();
+
+            const tbody = document.getElementById('tabela-clientes');
+            tbody.innerHTML = '';
+
+            clientes.forEach(cliente => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+      <td>${cliente.nome}</td>
+      <td>${cliente.telefone || '-'}</td>
+      <td>${cliente.email}</td>
+      <td>${cliente.cpf || '-'}</td>
+      <td>${cliente.cnpj || '-'}</td>
+      <td>${cliente.razao_social || '-'}</td>
+      <td>
+        ${cliente.endereco?.rua || ''}, 
+        ${cliente.endereco?.numero || ''}, 
+        ${cliente.endereco?.bairro || ''}, 
+        ${cliente.endereco?.cidade || ''} - 
+        ${cliente.endereco?.cep || ''}
+      </td>
+    `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filtrarClientes() {
+            const termo = document.getElementById('filtro-cliente').value.toLowerCase();
+            const linhas = document.querySelectorAll('#tabela-clientes tr');
+
+            linhas.forEach(linha => {
+                const texto = linha.innerText.toLowerCase();
+                linha.style.display = texto.includes(termo) ? '' : 'none';
+            });
+        }
+        async function listarPedidosConfirmados() {
+            const res = await fetch(`${API}/orders/confirmed`);
+            const pedidos = await res.json();
+
+            const tbody = document.getElementById("tabela-confirmados");
+            tbody.innerHTML = "";
+
+            const cacheClientes = new Map();
+
+            for (const pedido of pedidos) {
+                try {
+                    let cliente;
+                    if (cacheClientes.has(pedido.user_id)) {
+                        cliente = cacheClientes.get(pedido.user_id);
+                    } else {
+                        const clienteRes = await fetch(`${API}/clients/${pedido.user_id}`);
+                        cliente = await clienteRes.json();
+                        cacheClientes.set(pedido.user_id, cliente);
+                    }
+
+                    const nomeCliente = cliente.nome || cliente.razao_social || "Cliente Desconhecido";
+                    const telefone = cliente.telefone || "";
+
+                    const telefoneNumeros = telefone.replace(/\D/g, "");
+                    const mensagem = encodeURIComponent(
+                        `Olá, ${nomeCliente}! 👋\n\nA Cereja Doce Moda 🍒 agradece sua preferência.\nVamos confirmar alguns detalhes para o envio do seu pedido?`
+                    );
+                    const whatsappLink = `https://wa.me/55${telefoneNumeros}?text=${mensagem}`;
+
+                    const linha = document.createElement("tr");
+                    linha.innerHTML = `
+                <td>${nomeCliente}</td>
+                <td>
+                    ${telefone
+                            ? `<a href="${whatsappLink}" target="_blank" class="btn btn-success btn-sm">
+                            <i class="bi bi-whatsapp"></i> WhatsApp
+                          </a>`
+                            : "Não informado"}
+                </td>
+                <td>R$ ${pedido.total.toFixed(2)}</td>
+                <td>R$ ${pedido.shipping_cost.toFixed(2)}</td>
+                <td>
+                    <ul class="list-unstyled mb-0">
+                        ${pedido.products
+                            .map(
+                                (p) =>
+                                    `<li>${p.quantity}x ${p.name} <span class="text-muted">(R$ ${p.unitary_value.toFixed(2)})</span></li>`
+                            )
+                            .join("")}
+                    </ul>
+                </td>
+                <td>${new Date(pedido.created_at).toLocaleString()}</td>
+                <td>${new Date(pedido.confirmed_at).toLocaleString()}</td>
+            `;
+                    tbody.appendChild(linha);
+                } catch (error) {
+                    console.error("Erro ao montar linha do pedido confirmado:", error);
+                }
+            }
+        }
+
+        function filtrarPedidosConfirmados() {
+            const filtro = document.getElementById("filtro-confirmados").value.toLowerCase();
+            const linhas = document.querySelectorAll("#tabela-confirmados tr");
+
+            linhas.forEach((linha) => {
+                const nome = linha.cells[0]?.textContent.toLowerCase() || "";
+                const pedidoId = linha.cells[2]?.textContent.toLowerCase() || ""; // ou outro índice conforme o layout
+
+                if (nome.includes(filtro) || pedidoId.includes(filtro)) {
+                    linha.style.display = "";
+                } else {
+                    linha.style.display = "none";
+                }
+            });
+        }
+
+        async function listarClientesExcluir() {
+            const res = await fetch(`${API}/clients/secret_list_client`);
+            const clientes = await res.json();
+
+            const lista = document.getElementById("lista-clientes-excluir");
+            lista.innerHTML = "";
+
+            clientes.forEach((cliente) => {
+                const li = document.createElement("li");
+                li.className = "list-group-item d-flex justify-content-between align-items-center";
+
+                li.innerHTML = `
+      <div>
+        <strong>${cliente.nome || cliente.razao_social}</strong><br/>
+        <small>${cliente.telefone || ''} - ${cliente.email || ''}</small>
+      </div>
+      <button class="btn btn-danger btn-sm" title="Excluir Cliente" onclick="excluirCliente(${cliente.id}, this)">
+        <i class="bi bi-trash"></i>
+      </button>
+    `;
+
+                lista.appendChild(li);
+            });
+        }
+
+        function filtrarClientesExcluir() {
+            const filtro = document.getElementById("filtro-excluir-cliente").value.toLowerCase();
+            const itens = document.querySelectorAll("#lista-clientes-excluir li");
+
+            itens.forEach((li) => {
+                const texto = li.textContent.toLowerCase();
+                li.style.display = texto.includes(filtro) ? "flex" : "none";
+            });
+        }
+
+        async function excluirCliente(id, btn) {
+            // Abrir modal de confirmação customizado em vez do confirm()
+            const modalEl = document.getElementById('confirmDeleteModal');
+            const modal = new bootstrap.Modal(modalEl);
+            const confirmBtn = modalEl.querySelector('#confirmDeleteBtn');
+            const cancelBtn = modalEl.querySelector('#cancelDeleteBtn');
+            const mensagemEl = modalEl.querySelector('#confirmDeleteMessage');
+
+            mensagemEl.textContent = "Tem certeza que deseja excluir este cliente?";
+
+            modal.show();
+
+            // Remover listeners antigos para evitar duplicação
+            confirmBtn.onclick = null;
+            cancelBtn.onclick = null;
+
+            return new Promise((resolve, reject) => {
+                confirmBtn.onclick = async () => {
+                    confirmBtn.disabled = true;
+                    try {
+                        const res = await fetch(`${API}/clients/${id}`, {
+                            method: "DELETE",
+                        });
+                        const data = await res.json();
+
+                        if (res.ok) {
+                            showModal(data.message || "Cliente excluído com sucesso!");
+                            btn.closest("li").remove();
+                            modal.hide();
+                            resolve(true);
+                        } else {
+                            showModal(data.error || "Erro ao excluir cliente.");
+                            confirmBtn.disabled = false;
+                            modal.hide();
+                            resolve(false);
+                        }
+                    } catch (error) {
+                        showModal("Erro na comunicação com o servidor.");
+                        confirmBtn.disabled = false;
+                        modal.hide();
+                        resolve(false);
+                    }
+                };
+
+                cancelBtn.onclick = () => {
+                    modal.hide();
+                    resolve(false);
+                };
+            });
+        }
+
+
+
+    </script>
+</body>
+
+</html>
