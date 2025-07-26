@@ -485,8 +485,7 @@
 
                 const telefoneNumeros = telefone.replace(/\D/g, "");
                 const mensagem = encodeURIComponent(
-                    `Olá, ${nomeCliente}! 👋\n\nA Cereja Doce Moda 🍒 agradece sua preferência.\nVamos confirmar alguns detalhes para o envio do seu pedido?`
-                );
+                    `Olá, ${nomeCliente}! \u{1F44B}\n\nA Cereja Doce Moda \u{1F352} agradece sua preferência.\nVamos confirmar alguns detalhes para o envio do seu pedido?`);
                 const whatsappLink = `https://wa.me/55${telefoneNumeros}?text=${mensagem}`;
 
                 const linha = document.createElement("tr");
