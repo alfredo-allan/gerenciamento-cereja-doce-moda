@@ -255,8 +255,10 @@
                         <th>Produtos</th>
                         <th>Criado em</th>
                         <th>Confirmado em</th>
+                        <th>Ações</th> <!-- nova coluna -->
                     </tr>
                 </thead>
+
                 <tbody id="tabela-confirmados"></tbody>
             </table>
         </div>
@@ -482,10 +484,10 @@
 
                 const nomeCliente = cliente.nome || cliente.razao_social || "Cliente Desconhecido";
                 const telefone = cliente.telefone || "";
-
                 const telefoneNumeros = telefone.replace(/\D/g, "");
                 const mensagem = encodeURIComponent(
-                    `Olá, ${nomeCliente}!A Cereja Doce Moda  agradece sua preferência.\nVamos confirmar alguns detalhes para o envio do seu pedido?`);
+                    `Olá, ${nomeCliente}! A Cereja Doce Moda agradece sua preferência.\nVamos confirmar alguns detalhes para o envio do seu pedido?`
+                );
                 const whatsappLink = `https://wa.me/55${telefoneNumeros}?text=${mensagem}`;
 
                 const linha = document.createElement("tr");
@@ -494,9 +496,10 @@
                 <td>
                     ${telefone
                         ? `<a href="${whatsappLink}" target="_blank" class="btn btn-success btn-sm">
-                            <i class="bi bi-whatsapp"></i> WhatsApp
-                          </a>`
-                        : "Não informado"}
+                                  <i class="bi bi-whatsapp"></i> WhatsApp
+                               </a>`
+                        : "Não informado"
+                    }
                 </td>
                 <td>R$ ${pedido.total.toFixed(2)}</td>
                 <td>R$ ${pedido.shipping_cost.toFixed(2)}</td>
@@ -512,11 +515,37 @@
                 </td>
                 <td>${new Date(pedido.created_at).toLocaleString()}</td>
                 <td>${new Date(pedido.confirmed_at).toLocaleString()}</td>
+                <td>
+                    <button class="btn btn-danger btn-sm" onclick="excluirPedido(${pedido.id})">
+                        <i class="bi bi-trash"></i> Excluir
+                    </button>
+                </td>
             `;
                 tbody.appendChild(linha);
             } catch (error) {
                 console.error("Erro ao montar linha do pedido confirmado:", error);
             }
+        }
+    }
+
+    async function excluirPedido(pedidoId) {
+        if (!confirm("Tem certeza que deseja excluir este pedido?")) return;
+
+        try {
+            const res = await fetch(`${API}/orders/${pedidoId}`, {
+                method: "DELETE"
+            });
+
+            if (res.ok) {
+                alert("✅ Pedido excluído com sucesso!");
+                listarPedidosConfirmados(); // Atualiza a tabela
+            } else {
+                const erro = await res.text();
+                alert("❌ Erro ao excluir pedido: " + erro);
+            }
+        } catch (err) {
+            console.error("Erro na exclusão:", err);
+            alert("❌ Erro inesperado ao excluir o pedido.");
         }
     }
 
