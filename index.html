@@ -316,6 +316,19 @@
         </div>
     </div>
 
+    <!-- Modal feedback simples -->
+    <div class="modal fade" id="feedbackModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body text-center p-4" id="modalMensagem"></div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 </body>
@@ -444,6 +457,7 @@
     }
 
 
+
     listarPedidos();
     async function listarTodosClientes() {
         const res = await fetch(`${API}/clients/secret_list_client`);
@@ -493,6 +507,11 @@
         });
     }
 
+    // Variáveis de controle do modal
+    let idPedidoParaExcluir = null;
+    let linhaParaExcluir = null;
+
+    // Função para listar pedidos confirmados e renderizar tabela
     async function listarPedidosConfirmados() {
         try {
             const res = await fetch(`${API}/orders/confirmed`);
@@ -524,43 +543,42 @@
 
                 const linha = document.createElement("tr");
                 linha.innerHTML = `
-                <td>${nomeCliente}</td>
-                <td>
-                    ${telefone
+        <td>${nomeCliente}</td>
+        <td>
+          ${telefone
                         ? `<a href="${whatsappLink}" target="_blank" class="btn btn-success btn-sm">
-                            <i class="bi bi-whatsapp"></i> WhatsApp
-                          </a>`
+                <i class="bi bi-whatsapp"></i> WhatsApp
+              </a>`
                         : "Não informado"}
-                </td>
-                <td>R$ ${pedido.total.toFixed(2)}</td>
-                <td>R$ ${pedido.shipping_cost.toFixed(2)}</td>
-                <td>
-                    <ul class="list-unstyled mb-0">
-                        ${pedido.products.map(p =>
-                            `<li>${p.quantity}x ${p.name} <span class="text-muted">(R$ ${p.unitary_value.toFixed(2)})</span></li>`
-                        ).join("")}
-                    </ul>
-                </td>
-                <td>${new Date(pedido.created_at).toLocaleString()}</td>
-                <td>${new Date(pedido.confirmed_at).toLocaleString()}</td>
-                <td>
-                    <button class="btn btn-sm btn-outline-danger" onclick="abrirModalExclusao(${pedido.id}, this)">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </td>
-            `;
+        </td>
+        <td>R$ ${pedido.total.toFixed(2)}</td>
+        <td>R$ ${pedido.shipping_cost.toFixed(2)}</td>
+        <td>
+          <ul class="list-unstyled mb-0">
+            ${pedido.products
+                        .map(
+                            (p) =>
+                                `<li>${p.quantity}x ${p.name} <span class="text-muted">(R$ ${p.unitary_value.toFixed(2)})</span></li>`
+                        )
+                        .join("")}
+          </ul>
+        </td>
+        <td>${new Date(pedido.created_at).toLocaleString()}</td>
+        <td>${new Date(pedido.confirmed_at).toLocaleString()}</td>
+        <td>
+          <button class="btn btn-sm btn-outline-danger" onclick="abrirModalExclusao(${pedido.id}, this)">
+            <i class="bi bi-trash"></i>
+          </button>
+        </td>
+      `;
                 tbody.appendChild(linha);
             }
         } catch (error) {
-            console.error(error);
+            console.error("Erro ao listar pedidos confirmados:", error);
         }
     }
 
-    // Variáveis de controle do modal
-    let idPedidoParaExcluir = null;
-    let linhaParaExcluir = null;
-
-    // Abre modal e guarda ID
+    // Abre modal para confirmar exclusão
     function abrirModalExclusao(id, elementoBotao) {
         idPedidoParaExcluir = id;
         linhaParaExcluir = elementoBotao.closest("tr");
@@ -568,18 +586,19 @@
         modal.show();
     }
 
-    // Confirma exclusão
+    // Confirma exclusão e atualiza lista
     document.getElementById("btn-confirmar-exclusao").addEventListener("click", async () => {
         if (!idPedidoParaExcluir) return;
 
         try {
-            fetch(`${API}/orders/${idPedidoParaExcluir}/delete`, {
+            const resposta = await fetch(`${API}/orders/${idPedidoParaExcluir}/delete`, {
                 method: "DELETE",
-                headers: { "Content-Type": "application/json" }
+                headers: { "Content-Type": "application/json" },
             });
 
             if (resposta.ok) {
-                linhaParaExcluir.remove();
+                // Atualiza a lista após exclusão
+                await listarPedidosConfirmados();
             } else {
                 alert("Erro ao excluir pedido.");
             }
@@ -593,33 +612,8 @@
         linhaParaExcluir = null;
     });
 
-    // Carrega a lista ao abrir
+    // Carrega a lista assim que o DOM estiver pronto
     document.addEventListener("DOMContentLoaded", listarPedidosConfirmados);
-
-
-    document.getElementById("btn-confirmar-exclusao").addEventListener("click", async () => {
-        if (!idPedidoParaExcluir) return;
-
-        try {
-            const resposta = await fetch(`${API}/orders/${idPedidoParaExcluir}`, {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" }
-            });
-
-            if (resposta.ok) {
-                linhaParaExcluir.remove();
-            } else {
-                alert("Erro ao excluir pedido.");
-            }
-        } catch (erro) {
-            console.error("Erro na exclusão:", erro);
-            alert("Erro na conexão com o servidor.");
-        }
-
-        bootstrap.Modal.getInstance(document.getElementById("modal-excluir-pedido")).hide();
-        idPedidoParaExcluir = null;
-        linhaParaExcluir = null;
-    });
 
 
     async function listarClientesExcluir() {
