@@ -258,11 +258,11 @@
                         <th>Ações</th> <!-- nova coluna -->
                     </tr>
                 </thead>
-
                 <tbody id="tabela-confirmados"></tbody>
             </table>
         </div>
     </div>
+
 
     <!-- Excluir clientes -->
     <div id="view-excluir-cliente" class="view">
@@ -424,44 +424,8 @@
         new bootstrap.Modal(document.getElementById('feedbackModal')).show();
     }
 
-    listarPedidos();
-    async function listarTodosClientes() {
-        const res = await fetch(`${API}/clients/secret_list_client`);
-        const clientes = await res.json();
+    listarPedidosConfirmados();
 
-        const tbody = document.getElementById('tabela-clientes');
-        tbody.innerHTML = '';
-
-        clientes.forEach(cliente => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-      <td>${cliente.nome}</td>
-      <td>${cliente.telefone || '-'}</td>
-      <td>${cliente.email}</td>
-      <td>${cliente.cpf || '-'}</td>
-      <td>${cliente.cnpj || '-'}</td>
-      <td>${cliente.razao_social || '-'}</td>
-      <td>
-        ${cliente.endereco?.rua || ''}, 
-        ${cliente.endereco?.numero || ''}, 
-        ${cliente.endereco?.bairro || ''}, 
-        ${cliente.endereco?.cidade || ''} - 
-        ${cliente.endereco?.cep || ''}
-      </td>
-    `;
-            tbody.appendChild(tr);
-        });
-    }
-
-    function filtrarClientes() {
-        const termo = document.getElementById('filtro-cliente').value.toLowerCase();
-        const linhas = document.querySelectorAll('#tabela-clientes tr');
-
-        linhas.forEach(linha => {
-            const texto = linha.innerText.toLowerCase();
-            linha.style.display = texto.includes(termo) ? '' : 'none';
-        });
-    }
     async function listarPedidosConfirmados() {
         const res = await fetch(`${API}/orders/confirmed`);
         const pedidos = await res.json();
@@ -491,32 +455,28 @@
                 const whatsappLink = `https://wa.me/55${telefoneNumeros}?text=${mensagem}`;
 
                 const linha = document.createElement("tr");
+                linha.id = `order-row-${pedido.id}`;
                 linha.innerHTML = `
                 <td>${nomeCliente}</td>
                 <td>
                     ${telefone
                         ? `<a href="${whatsappLink}" target="_blank" class="btn btn-success btn-sm">
-                                  <i class="bi bi-whatsapp"></i> WhatsApp
-                               </a>`
-                        : "Não informado"
-                    }
+                              <i class="bi bi-whatsapp"></i> WhatsApp
+                           </a>`
+                        : "Não informado"}
                 </td>
                 <td>R$ ${pedido.total.toFixed(2)}</td>
                 <td>R$ ${pedido.shipping_cost.toFixed(2)}</td>
                 <td>
                     <ul class="list-unstyled mb-0">
-                        ${pedido.products
-                        .map(
-                            (p) =>
-                                `<li>${p.quantity}x ${p.name} <span class="text-muted">(R$ ${p.unitary_value.toFixed(2)})</span></li>`
-                        )
-                        .join("")}
+                        ${pedido.products.map(p =>
+                            `<li>${p.quantity}x ${p.name} <span class="text-muted">(R$ ${p.unitary_value.toFixed(2)})</span></li>`).join("")}
                     </ul>
                 </td>
                 <td>${new Date(pedido.created_at).toLocaleString()}</td>
                 <td>${new Date(pedido.confirmed_at).toLocaleString()}</td>
                 <td>
-                    <button class="btn btn-danger btn-sm" onclick="excluirPedido(${pedido.id})">
+                    <button class="btn btn-danger btn-sm" onclick="showDeleteModal(${pedido.id}, '${nomeCliente}')">
                         <i class="bi bi-trash"></i> Excluir
                     </button>
                 </td>
@@ -528,41 +488,72 @@
         }
     }
 
-    async function excluirPedido(pedidoId) {
-        if (!confirm("Tem certeza que deseja excluir este pedido?")) return;
+    // Controle do modal de exclusão
+    let selectedOrderId = null;
 
-        try {
-            const res = await fetch(`${API}/orders/${pedidoId}`, {
-                method: "DELETE"
-            });
+    function showDeleteModal(orderId, clienteNome) {
+        selectedOrderId = orderId;
+        const msg = `Tem certeza que deseja excluir o pedido <strong>#${orderId}</strong> de <strong>${clienteNome}</strong>?`;
+        document.getElementById("confirmDeleteMessage").innerHTML = msg;
 
-            if (res.ok) {
-                alert("✅ Pedido excluído com sucesso!");
-                listarPedidosConfirmados(); // Atualiza a tabela
-            } else {
-                const erro = await res.text();
-                alert("❌ Erro ao excluir pedido: " + erro);
-            }
-        } catch (err) {
-            console.error("Erro na exclusão:", err);
-            alert("❌ Erro inesperado ao excluir o pedido.");
-        }
+        const modal = new bootstrap.Modal(document.getElementById("confirmDeleteModal"));
+        modal.show();
     }
 
+    // Evento de confirmação no modal
+    document.getElementById("confirmDeleteBtn").addEventListener("click", async () => {
+        if (!selectedOrderId) return;
+
+        try {
+            const response = await fetch(`/orders/${selectedOrderId}/cancel`, {
+                method: "DELETE",
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                // Remove visualmente
+                document.getElementById(`order-row-${selectedOrderId}`)?.remove();
+
+                showToast(result.message || "Pedido excluído com sucesso.", "success");
+            } else {
+                showToast(result.error || "Erro ao excluir pedido.", "danger");
+            }
+        } catch (error) {
+            console.error("Erro na requisição DELETE:", error);
+            showToast("Erro ao conectar com o servidor.", "danger");
+        }
+
+        // Fecha o modal
+        const modalEl = document.getElementById("confirmDeleteModal");
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+        modalInstance.hide();
+        selectedOrderId = null;
+    });
+
+    // Filtro de pedidos
     function filtrarPedidosConfirmados() {
         const filtro = document.getElementById("filtro-confirmados").value.toLowerCase();
         const linhas = document.querySelectorAll("#tabela-confirmados tr");
 
-        linhas.forEach((linha) => {
-            const nome = linha.cells[0]?.textContent.toLowerCase() || "";
-            const pedidoId = linha.cells[2]?.textContent.toLowerCase() || ""; // ou outro índice conforme o layout
-
-            if (nome.includes(filtro) || pedidoId.includes(filtro)) {
-                linha.style.display = "";
-            } else {
-                linha.style.display = "none";
-            }
+        linhas.forEach(linha => {
+            const texto = linha.innerText.toLowerCase();
+            linha.style.display = texto.includes(filtro) ? "" : "none";
         });
+    }
+
+    // Toast básico usando alert do Bootstrap
+    function showToast(mensagem, tipo = "success") {
+        const toast = document.createElement("div");
+        toast.className = `alert alert-${tipo} mt-3`;
+        toast.role = "alert";
+        toast.innerHTML = mensagem;
+
+        document.body.prepend(toast);
+
+        setTimeout(() => {
+            toast.remove();
+        }, 4000);
     }
 
     async function listarClientesExcluir() {
