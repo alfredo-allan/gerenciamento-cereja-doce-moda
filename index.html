@@ -255,14 +255,12 @@
                         <th>Produtos</th>
                         <th>Criado em</th>
                         <th>Confirmado em</th>
-                        <th>Ações</th> <!-- nova coluna -->
                     </tr>
                 </thead>
                 <tbody id="tabela-confirmados"></tbody>
             </table>
         </div>
     </div>
-
 
     <!-- Excluir clientes -->
     <div id="view-excluir-cliente" class="view">
@@ -424,8 +422,44 @@
         new bootstrap.Modal(document.getElementById('feedbackModal')).show();
     }
 
-    listarPedidosConfirmados();
+    listarPedidos();
+    async function listarTodosClientes() {
+        const res = await fetch(`${API}/clients/secret_list_client`);
+        const clientes = await res.json();
 
+        const tbody = document.getElementById('tabela-clientes');
+        tbody.innerHTML = '';
+
+        clientes.forEach(cliente => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+      <td>${cliente.nome}</td>
+      <td>${cliente.telefone || '-'}</td>
+      <td>${cliente.email}</td>
+      <td>${cliente.cpf || '-'}</td>
+      <td>${cliente.cnpj || '-'}</td>
+      <td>${cliente.razao_social || '-'}</td>
+      <td>
+        ${cliente.endereco?.rua || ''}, 
+        ${cliente.endereco?.numero || ''}, 
+        ${cliente.endereco?.bairro || ''}, 
+        ${cliente.endereco?.cidade || ''} - 
+        ${cliente.endereco?.cep || ''}
+      </td>
+    `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function filtrarClientes() {
+        const termo = document.getElementById('filtro-cliente').value.toLowerCase();
+        const linhas = document.querySelectorAll('#tabela-clientes tr');
+
+        linhas.forEach(linha => {
+            const texto = linha.innerText.toLowerCase();
+            linha.style.display = texto.includes(termo) ? '' : 'none';
+        });
+    }
     async function listarPedidosConfirmados() {
         const res = await fetch(`${API}/orders/confirmed`);
         const pedidos = await res.json();
@@ -448,38 +482,36 @@
 
                 const nomeCliente = cliente.nome || cliente.razao_social || "Cliente Desconhecido";
                 const telefone = cliente.telefone || "";
+
                 const telefoneNumeros = telefone.replace(/\D/g, "");
                 const mensagem = encodeURIComponent(
-                    `Olá, ${nomeCliente}! A Cereja Doce Moda agradece sua preferência.\nVamos confirmar alguns detalhes para o envio do seu pedido?`
-                );
+                    `Olá, ${nomeCliente}!A Cereja Doce Moda  agradece sua preferência.\nVamos confirmar alguns detalhes para o envio do seu pedido?`);
                 const whatsappLink = `https://wa.me/55${telefoneNumeros}?text=${mensagem}`;
 
                 const linha = document.createElement("tr");
-                linha.id = `order-row-${pedido.id}`;
                 linha.innerHTML = `
                 <td>${nomeCliente}</td>
                 <td>
                     ${telefone
                         ? `<a href="${whatsappLink}" target="_blank" class="btn btn-success btn-sm">
-                              <i class="bi bi-whatsapp"></i> WhatsApp
-                           </a>`
+                            <i class="bi bi-whatsapp"></i> WhatsApp
+                          </a>`
                         : "Não informado"}
                 </td>
                 <td>R$ ${pedido.total.toFixed(2)}</td>
                 <td>R$ ${pedido.shipping_cost.toFixed(2)}</td>
                 <td>
                     <ul class="list-unstyled mb-0">
-                        ${pedido.products.map(p =>
-                            `<li>${p.quantity}x ${p.name} <span class="text-muted">(R$ ${p.unitary_value.toFixed(2)})</span></li>`).join("")}
+                        ${pedido.products
+                        .map(
+                            (p) =>
+                                `<li>${p.quantity}x ${p.name} <span class="text-muted">(R$ ${p.unitary_value.toFixed(2)})</span></li>`
+                        )
+                        .join("")}
                     </ul>
                 </td>
                 <td>${new Date(pedido.created_at).toLocaleString()}</td>
                 <td>${new Date(pedido.confirmed_at).toLocaleString()}</td>
-                <td>
-                    <button class="btn btn-danger btn-sm" onclick="showDeleteModal(${pedido.id}, '${nomeCliente}')">
-                        <i class="bi bi-trash"></i> Excluir
-                    </button>
-                </td>
             `;
                 tbody.appendChild(linha);
             } catch (error) {
@@ -488,72 +520,20 @@
         }
     }
 
-    // Controle do modal de exclusão
-    let selectedOrderId = null;
-
-    function showDeleteModal(orderId, clienteNome) {
-        selectedOrderId = orderId;
-        const msg = `Tem certeza que deseja excluir o pedido <strong>#${orderId}</strong> de <strong>${clienteNome}</strong>?`;
-        document.getElementById("confirmDeleteMessage").innerHTML = msg;
-
-        const modal = new bootstrap.Modal(document.getElementById("confirmDeleteModal"));
-        modal.show();
-    }
-
-    // Evento de confirmação no modal
-    document.getElementById("confirmDeleteBtn").addEventListener("click", async () => {
-        if (!selectedOrderId) return;
-
-        try {
-            const response = await fetch(`/orders/${selectedOrderId}/cancel`, {
-                method: "DELETE",
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                // Remove visualmente
-                document.getElementById(`order-row-${selectedOrderId}`)?.remove();
-
-                showToast(result.message || "Pedido excluído com sucesso.", "success");
-            } else {
-                showToast(result.error || "Erro ao excluir pedido.", "danger");
-            }
-        } catch (error) {
-            console.error("Erro na requisição DELETE:", error);
-            showToast("Erro ao conectar com o servidor.", "danger");
-        }
-
-        // Fecha o modal
-        const modalEl = document.getElementById("confirmDeleteModal");
-        const modalInstance = bootstrap.Modal.getInstance(modalEl);
-        modalInstance.hide();
-        selectedOrderId = null;
-    });
-
-    // Filtro de pedidos
     function filtrarPedidosConfirmados() {
         const filtro = document.getElementById("filtro-confirmados").value.toLowerCase();
         const linhas = document.querySelectorAll("#tabela-confirmados tr");
 
-        linhas.forEach(linha => {
-            const texto = linha.innerText.toLowerCase();
-            linha.style.display = texto.includes(filtro) ? "" : "none";
+        linhas.forEach((linha) => {
+            const nome = linha.cells[0]?.textContent.toLowerCase() || "";
+            const pedidoId = linha.cells[2]?.textContent.toLowerCase() || ""; // ou outro índice conforme o layout
+
+            if (nome.includes(filtro) || pedidoId.includes(filtro)) {
+                linha.style.display = "";
+            } else {
+                linha.style.display = "none";
+            }
         });
-    }
-
-    // Toast básico usando alert do Bootstrap
-    function showToast(mensagem, tipo = "success") {
-        const toast = document.createElement("div");
-        toast.className = `alert alert-${tipo} mt-3`;
-        toast.role = "alert";
-        toast.innerHTML = mensagem;
-
-        document.body.prepend(toast);
-
-        setTimeout(() => {
-            toast.remove();
-        }, 4000);
     }
 
     async function listarClientesExcluir() {
