@@ -296,6 +296,7 @@
             </div>
         </div>
     </div>
+
     <div class="modal fade" id="modal-excluir-pedido" tabindex="-1" aria-labelledby="modalExcluirPedidoLabel"
         aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -438,9 +439,10 @@
     }
 
     function showModal(msg) {
-        document.getElementById('modalMensagem').textContent = msg;
-        new bootstrap.Modal(document.getElementById('feedbackModal')).show();
+        document.getElementById("confirmDeleteMessage").textContent = msg;
+        new bootstrap.Modal(document.getElementById("confirmDeleteModal")).show();
     }
+
 
     listarPedidos();
     async function listarTodosClientes() {
@@ -571,7 +573,7 @@
         if (!idPedidoParaExcluir) return;
 
         try {
-            const resposta = await fetch(`${API}/orders/${idPedidoParaExcluir}`, {
+            fetch(`${API}/orders/${idPedidoParaExcluir}/delete`, {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" }
             });
