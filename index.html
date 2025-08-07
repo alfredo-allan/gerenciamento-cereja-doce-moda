@@ -413,6 +413,10 @@
         }
     });
 
+    // Variáveis para controle da ação e pedido selecionado
+    let acaoPedido = null; // 'confirmar' ou 'cancelar'
+    let idPedidoSelecionado = null;
+
     async function listarPedidos() {
         const pedidosRes = await fetch(`${API}/orders/pending`);
         const pedidos = await pedidosRes.json();
@@ -423,6 +427,7 @@
 
         const tbody = document.getElementById('lista-pedidos');
         tbody.innerHTML = '';
+
         pedidos.forEach(pedido => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -431,30 +436,70 @@
           <td>${pedido.status}</td>
           <td>R$ ${pedido.total.toFixed(2)}</td>
           <td>
-            <button class="btn btn-success btn-sm" onclick="confirmarPedido(${pedido.id})">✅</button>
-            <button class="btn btn-danger btn-sm" onclick="cancelarPedido(${pedido.id})">❌</button>
+            <button class="btn btn-success btn-sm" onclick="abrirModalAcao('confirmar', ${pedido.id})">✅</button>
+            <button class="btn btn-danger btn-sm" onclick="abrirModalAcao('cancelar', ${pedido.id})">❌</button>
           </td>
         `;
             tbody.appendChild(tr);
         });
     }
 
-    async function confirmarPedido(id) {
-        await fetch(`${API}/orders/${id}/confirm`, { method: 'PUT' });
-        showModal('Pedido confirmado!');
-        listarPedidos();
+    // Abre modal para confirmar a ação (confirmar ou cancelar pedido)
+    function abrirModalAcao(acao, idPedido) {
+        acaoPedido = acao;
+        idPedidoSelecionado = idPedido;
+
+        const mensagem = acao === 'confirmar'
+            ? 'Você tem certeza que deseja confirmar este pedido?'
+            : 'Você tem certeza que deseja cancelar este pedido?';
+
+        document.getElementById("confirmDeleteMessage").textContent = mensagem;
+
+        const modal = new bootstrap.Modal(document.getElementById("confirmDeleteModal"));
+        modal.show();
     }
 
-    async function cancelarPedido(id) {
-        await fetch(`${API}/orders/${id}/cancel`, { method: 'DELETE' });
-        showModal('Pedido cancelado!');
-        listarPedidos();
-    }
+    // Botão "Sim" do modal executa a ação
+    document.getElementById("confirmDeleteBtn").addEventListener("click", async () => {
+        if (!acaoPedido || !idPedidoSelecionado) return;
 
-    function showModal(msg) {
-        document.getElementById("confirmDeleteMessage").textContent = msg;
-        new bootstrap.Modal(document.getElementById("confirmDeleteModal")).show();
-    }
+        try {
+            let url = '';
+            let method = '';
+
+            if (acaoPedido === 'confirmar') {
+                url = `${API}/orders/${idPedidoSelecionado}/confirm`;
+                method = 'PUT';
+            } else if (acaoPedido === 'cancelar') {
+                url = `${API}/orders/${idPedidoSelecionado}/cancel`;
+                method = 'DELETE';
+            }
+
+            const resposta = await fetch(url, { method });
+
+            if (resposta.ok) {
+                // Atualiza a lista depois da ação
+                await listarPedidos();
+
+                // Fecha o modal
+                bootstrap.Modal.getInstance(document.getElementById("confirmDeleteModal")).hide();
+
+                // Opcional: pode mostrar um alerta ou toast aqui
+            } else {
+                alert("Erro ao executar a ação.");
+            }
+        } catch (error) {
+            console.error("Erro na ação do pedido:", error);
+            alert("Erro na conexão com o servidor.");
+        }
+
+        // Limpa variáveis de controle
+        acaoPedido = null;
+        idPedidoSelecionado = null;
+    });
+
+    // Carrega a lista ao abrir a página
+    document.addEventListener("DOMContentLoaded", listarPedidos);
 
 
 
