@@ -255,6 +255,7 @@
                         <th>Produtos</th>
                         <th>Criado em</th>
                         <th>Confirmado em</th>
+                        <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody id="tabela-confirmados"></tbody>
@@ -291,6 +292,25 @@
                     <button type="button" id="cancelDeleteBtn" class="btn btn-secondary"
                         data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" id="confirmDeleteBtn" class="btn btn-danger">Excluir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal de Confirmação de Exclusão -->
+    <div class="modal fade" id="modalExcluirPedido" tabindex="-1" aria-labelledby="modalExcluirPedidoLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="modalExcluirPedidoLabel">Confirmar Exclusão</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    Tem certeza que deseja excluir este pedido?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button id="btnConfirmarExclusao" type="button" class="btn btn-danger">Excluir</button>
                 </div>
             </div>
         </div>
@@ -460,6 +480,7 @@
             linha.style.display = texto.includes(termo) ? '' : 'none';
         });
     }
+
     async function listarPedidosConfirmados() {
         const res = await fetch(`${API}/orders/confirmed`);
         const pedidos = await res.json();
@@ -520,21 +541,66 @@
         }
     }
 
-    function filtrarPedidosConfirmados() {
-        const filtro = document.getElementById("filtro-confirmados").value.toLowerCase();
-        const linhas = document.querySelectorAll("#tabela-confirmados tr");
+    let pedidoIdParaExcluir = null;
 
-        linhas.forEach((linha) => {
-            const nome = linha.cells[0]?.textContent.toLowerCase() || "";
-            const pedidoId = linha.cells[2]?.textContent.toLowerCase() || ""; // ou outro índice conforme o layout
+    function renderizarPedidosConfirmados(pedidos) {
+        const tabela = document.getElementById("tabela-confirmados");
+        tabela.innerHTML = "";
 
-            if (nome.includes(filtro) || pedidoId.includes(filtro)) {
-                linha.style.display = "";
-            } else {
-                linha.style.display = "none";
-            }
+        pedidos.forEach(pedido => {
+            const tr = document.createElement("tr");
+
+            const produtosFormatados = pedido.products.map(p => `${p.quantity}x ${p.name}`).join("<br>");
+            tr.innerHTML = `
+            <td>${pedido.nome_cliente || "Desconhecido"}</td>
+            <td>${pedido.whatsapp || "-"}</td>
+            <td>R$ ${pedido.total.toFixed(2)}</td>
+            <td>R$ ${pedido.shipping_cost.toFixed(2)}</td>
+            <td>${produtosFormatados}</td>
+            <td>${new Date(pedido.created_at).toLocaleString()}</td>
+            <td>${new Date(pedido.confirmed_at).toLocaleString()}</td>
+            <td>
+                <button class="btn btn-sm btn-danger" onclick="abrirModalExclusao(${pedido.id})">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        `;
+
+            tabela.appendChild(tr);
         });
     }
+
+    function abrirModalExclusao(id) {
+        pedidoIdParaExcluir = id;
+        const modal = new bootstrap.Modal(document.getElementById('modalExcluirPedido'));
+        modal.show();
+    }
+
+    document.getElementById("btnConfirmarExclusao").addEventListener("click", async () => {
+        if (!pedidoIdParaExcluir) return;
+
+        try {
+            const resposta = await fetch(`/delete_confirmed_order/${pedidoIdParaExcluir}`, {
+                method: "DELETE"
+            });
+
+            if (resposta.ok) {
+                // Remover linha da tabela sem recarregar
+                document.querySelectorAll("#tabela-confirmados tr").forEach(tr => {
+                    if (tr.innerHTML.includes(`abrirModalExclusao(${pedidoIdParaExcluir})`)) {
+                        tr.remove();
+                    }
+                });
+
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalExcluirPedido'));
+                modal.hide();
+            } else {
+                alert("Erro ao excluir pedido.");
+            }
+        } catch (error) {
+            console.error("Erro na requisição:", error);
+        }
+    });
 
     async function listarClientesExcluir() {
         const res = await fetch(`${API}/clients/secret_list_client`);
