@@ -296,8 +296,7 @@
             </div>
         </div>
     </div>
-    <!-- Modal de Confirmação de Exclusão -->
-    <div class="modal fade" id="modalExcluirPedido" tabindex="-1" aria-labelledby="modalExcluirPedidoLabel"
+    <div class="modal fade" id="modal-excluir-pedido" tabindex="-1" aria-labelledby="modalExcluirPedidoLabel"
         aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -310,11 +309,12 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button id="btnConfirmarExclusao" type="button" class="btn btn-danger">Excluir</button>
+                    <button id="btn-confirmar-exclusao" type="button" class="btn btn-danger">Excluir</button>
                 </div>
             </div>
         </div>
     </div>
+
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
 </body>
@@ -481,17 +481,28 @@
         });
     }
 
+    function filtrarPedidosConfirmados() {
+        const termo = document.getElementById('filtro-confirmados').value.toLowerCase();
+        const linhas = document.querySelectorAll('#tabela-confirmados tr');
+
+        linhas.forEach(linha => {
+            const texto = linha.innerText.toLowerCase();
+            linha.style.display = texto.includes(termo) ? '' : 'none';
+        });
+    }
+
     async function listarPedidosConfirmados() {
-        const res = await fetch(`${API}/orders/confirmed`);
-        const pedidos = await res.json();
+        try {
+            const res = await fetch(`${API}/orders/confirmed`);
+            if (!res.ok) throw new Error("Erro ao buscar pedidos confirmados");
 
-        const tbody = document.getElementById("tabela-confirmados");
-        tbody.innerHTML = "";
+            const pedidos = await res.json();
+            const tbody = document.getElementById("tabela-confirmados");
+            tbody.innerHTML = "";
 
-        const cacheClientes = new Map();
+            const cacheClientes = new Map();
 
-        for (const pedido of pedidos) {
-            try {
+            for (const pedido of pedidos) {
                 let cliente;
                 if (cacheClientes.has(pedido.user_id)) {
                     cliente = cacheClientes.get(pedido.user_id);
@@ -503,60 +514,86 @@
 
                 const nomeCliente = cliente.nome || cliente.razao_social || "Cliente Desconhecido";
                 const telefone = cliente.telefone || "";
-
                 const telefoneNumeros = telefone.replace(/\D/g, "");
                 const mensagem = encodeURIComponent(
-                    `Olá, ${nomeCliente}!A Cereja Doce Moda  agradece sua preferência.\nVamos confirmar alguns detalhes para o envio do seu pedido?`);
+                    `Olá, ${nomeCliente}! A Cereja Doce Moda agradece sua preferência.\nVamos confirmar alguns detalhes para o envio do seu pedido?`
+                );
                 const whatsappLink = `https://wa.me/55${telefoneNumeros}?text=${mensagem}`;
 
                 const linha = document.createElement("tr");
                 linha.innerHTML = `
-    <td>${nomeCliente}</td>
-    <td>
-        ${telefone
+                <td>${nomeCliente}</td>
+                <td>
+                    ${telefone
                         ? `<a href="${whatsappLink}" target="_blank" class="btn btn-success btn-sm">
-                <i class="bi bi-whatsapp"></i> WhatsApp
-              </a>`
+                            <i class="bi bi-whatsapp"></i> WhatsApp
+                          </a>`
                         : "Não informado"}
-    </td>
-    <td>R$ ${pedido.total.toFixed(2)}</td>
-    <td>R$ ${pedido.shipping_cost.toFixed(2)}</td>
-    <td>
-        <ul class="list-unstyled mb-0">
-            ${pedido.products
-                        .map(
-                            (p) =>
-                                `<li>${p.quantity}x ${p.name} <span class="text-muted">(R$ ${p.unitary_value.toFixed(2)})</span></li>`
-                        )
-                        .join("")}
-        </ul>
-    </td>
-    <td>${new Date(pedido.created_at).toLocaleString()}</td>
-    <td>${new Date(pedido.confirmed_at).toLocaleString()}</td>
-    <td>
-        <button class="btn btn-sm btn-outline-danger" onclick="abrirModalExclusao(${pedido.id}, this)">
-            <i class="bi bi-trash"></i>
-        </button>
-    </td>
-`;
+                </td>
+                <td>R$ ${pedido.total.toFixed(2)}</td>
+                <td>R$ ${pedido.shipping_cost.toFixed(2)}</td>
+                <td>
+                    <ul class="list-unstyled mb-0">
+                        ${pedido.products.map(p =>
+                            `<li>${p.quantity}x ${p.name} <span class="text-muted">(R$ ${p.unitary_value.toFixed(2)})</span></li>`
+                        ).join("")}
+                    </ul>
+                </td>
+                <td>${new Date(pedido.created_at).toLocaleString()}</td>
+                <td>${new Date(pedido.confirmed_at).toLocaleString()}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-danger" onclick="abrirModalExclusao(${pedido.id}, this)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            `;
                 tbody.appendChild(linha);
-
-            } catch (error) {
-                console.error("Erro ao montar linha do pedido confirmado:", error);
             }
+        } catch (error) {
+            console.error(error);
         }
     }
 
+    // Variáveis de controle do modal
     let idPedidoParaExcluir = null;
-    let linhaParaExcluir = null; // guarda referência da linha
+    let linhaParaExcluir = null;
 
+    // Abre modal e guarda ID
     function abrirModalExclusao(id, elementoBotao) {
         idPedidoParaExcluir = id;
         linhaParaExcluir = elementoBotao.closest("tr");
-
         const modal = new bootstrap.Modal(document.getElementById("modal-excluir-pedido"));
         modal.show();
     }
+
+    // Confirma exclusão
+    document.getElementById("btn-confirmar-exclusao").addEventListener("click", async () => {
+        if (!idPedidoParaExcluir) return;
+
+        try {
+            const resposta = await fetch(`${API}/orders/${idPedidoParaExcluir}`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" }
+            });
+
+            if (resposta.ok) {
+                linhaParaExcluir.remove();
+            } else {
+                alert("Erro ao excluir pedido.");
+            }
+        } catch (erro) {
+            console.error("Erro na exclusão:", erro);
+            alert("Erro na conexão com o servidor.");
+        }
+
+        bootstrap.Modal.getInstance(document.getElementById("modal-excluir-pedido")).hide();
+        idPedidoParaExcluir = null;
+        linhaParaExcluir = null;
+    });
+
+    // Carrega a lista ao abrir
+    document.addEventListener("DOMContentLoaded", listarPedidosConfirmados);
+
 
     document.getElementById("btn-confirmar-exclusao").addEventListener("click", async () => {
         if (!idPedidoParaExcluir) return;
