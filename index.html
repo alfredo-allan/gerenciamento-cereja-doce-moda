@@ -603,9 +603,10 @@
             ${pedido.products
                         .map(
                             (p) =>
-                                `<li>${p.quantity}x ${p.name} <span class="text-muted">(R$ ${p.unitary_value.toFixed(2)})</span></li>`
+                                `<li>${p.quantity}x ${p.name} ${p.size ? `(${p.size})` : ""} <span class="text-muted">(R$ ${p.unitary_value.toFixed(2)})</span></li>`
                         )
                         .join("")}
+
           </ul>
         </td>
         <td>${new Date(pedido.created_at).toLocaleString()}</td>
